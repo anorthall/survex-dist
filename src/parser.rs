@@ -21,11 +21,10 @@ pub fn parse_dump3d(file: File) -> Result<(), Box<dyn Error>> {
     for line in reader.lines() {
         current_line += 1;
         let line = line?;
-        trace!("Read line: {}", line);
         if let Some(param) = line.strip_prefix("NODE ") {
             match parse_node(param) {
                 Ok(node) => {
-                    trace!("Parsed node: {:?}", node);
+                    trace!("Parsed NODE: {:?}", node);
                     parsed_data.nodes.push(node)
                 }
                 Err(e) => {
@@ -34,6 +33,22 @@ pub fn parse_dump3d(file: File) -> Result<(), Box<dyn Error>> {
                     );
                 }
             }
+        } else if let Some(param) = line.strip_prefix("LEG ") {
+            // TODO: Parse LEG
+            trace!("Parsed LEG: {}", param);
+        } else if let Some(param) = line.strip_prefix("MOVE ") {
+            // TODO: Parse MOVE
+            trace!("Parsed MOVE: {}", param);
+        } else if let Some(param) = line.strip_prefix("LINE ") {
+            // TODO: Parse LINE
+            trace!("Parsed LINE: {}", param);
+        } else if let Some(param) = line.strip_prefix("XSECT ") {
+            // TODO: Parse XSECT
+            // This will involve parsing multiple lines followed by XSECT_END
+            trace!("Parsed XSECT: {}", param);
+        } else if let Some(param) = line.strip_prefix("ERROR_INFO ") {
+            // TODO: Parse ERROR_INFO
+            trace!("Parsed ERROR_INFO: {}", param);
         } else if line == "STOP" {
             info!("STOP reached. Parsing complete.");
             let num_nodes = parsed_data.nodes.len();
