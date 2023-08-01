@@ -328,10 +328,4 @@ mod tests {
             .to_string()
             .eq(&format!("Invalid leg line: {}", invalid_leg)));
     }
-
-    #[test]
-    #[ignore]
-    fn test_line_counting() {
-        todo!("Test that the line counter is incremented correctly.")
-    }
 }
