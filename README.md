@@ -4,7 +4,7 @@ the output from the Survex `dump3d` command. The project is in early development
 not yet functional.
 
 ## Usage
-The project is barely function, but the following command will run the program so far:
+The project is barely functional, but the following command will run the program so far:
 
 ```cargo run -- dump3d/notts_ii_with_entrance.txt a b```
 
