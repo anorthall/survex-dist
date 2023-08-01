@@ -1,0 +1,11 @@
+[package]
+name = "survex-dist"
+description = "A tool to calculate the distance between two stations in a Survex dump3d file"
+authors = ["Andrew Northall <andrew@northall.me.uk>"]
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+clap = {version = "4.3.19", features = ["derive"]}
