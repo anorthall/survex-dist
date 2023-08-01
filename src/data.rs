@@ -13,6 +13,16 @@ pub struct Dump3D {
     pub nodes: Vec<Node>,
 }
 
+impl Display for Dump3D {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "Title: {}, Date: {}, CS: {:?}, Version: {}, Extended elevation: {}.",
+            self.title, self.date_numeric, self.cs, self.version, self.extended_elev,
+        )
+    }
+}
+
 #[allow(dead_code)] // TODO: Remove this
 #[derive(Debug)]
 pub struct Node {
@@ -44,15 +54,5 @@ impl Node {
             anon: false,
             wall: false,
         }
-    }
-}
-
-impl Display for Dump3D {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "Title: {}, Date: {}, CS: {:?}, Version: {}, Extended elevation: {}.",
-            self.title, self.date_numeric, self.cs, self.version, self.extended_elev,
-        )
     }
 }
