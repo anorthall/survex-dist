@@ -11,6 +11,7 @@ pub struct Dump3D {
     pub extended_elev: bool,
     pub separator: char,
     pub nodes: Vec<Node>,
+    pub legs: Vec<Leg>,
 }
 
 impl Display for Dump3D {
@@ -20,6 +21,30 @@ impl Display for Dump3D {
             "Title: {}, Date: {}, CS: {:?}, Version: {}, Extended elevation: {}.",
             self.title, self.date_numeric, self.cs, self.version, self.extended_elev,
         )
+    }
+}
+
+impl Dump3D {
+    pub fn new(
+        title: String,
+        date: String,
+        date_numeric: u64,
+        cs: Option<String>,
+        version: u8,
+        extended_elev: bool,
+        separator: char,
+    ) -> Self {
+        Self {
+            title,
+            date,
+            date_numeric,
+            cs,
+            version,
+            extended_elev,
+            separator,
+            nodes: Vec::new(),
+            legs: Vec::new(),
+        }
     }
 }
 
@@ -53,6 +78,39 @@ impl Node {
             fixed: false,
             anon: false,
             wall: false,
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct Leg {
+    pub from_x: f64,
+    pub from_y: f64,
+    pub from_z: f64,
+    pub to_x: f64,
+    pub to_y: f64,
+    pub to_z: f64,
+    pub label: Option<String>,
+}
+
+impl Leg {
+    pub fn new(
+        from_x: f64,
+        from_y: f64,
+        from_z: f64,
+        to_x: f64,
+        to_y: f64,
+        to_z: f64,
+        label: Option<String>,
+    ) -> Self {
+        Self {
+            from_x,
+            from_y,
+            from_z,
+            to_x,
+            to_y,
+            to_z,
+            label,
         }
     }
 }
