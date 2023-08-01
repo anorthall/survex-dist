@@ -12,11 +12,8 @@ pub fn parse_dump3d(file: File) -> Result<(), Box<dyn Error>> {
     // Parse headers
     info!("Reading headers.");
     let mut parsed_data = parse_headers(&mut reader, &mut current_line)?;
-    info!(
-        "Parsed {} header lines: {:?}",
-        current_line - 1, // Subtract 1 to account for the line containing '--'
-        parsed_data
-    );
+    info!("Parsed {} header lines.", current_line - 1);
+    info!("{}", parsed_data);
 
     // Parse the data in the file
     // Reference for dump3d format: https://github.com/ojwb/survex/blob/master/src/dump3d.c
