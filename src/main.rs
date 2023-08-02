@@ -123,12 +123,7 @@ fn pathfind(
             let mut distance = 0.0_f64;
             let mut leg_distance = 0.0_f64;
             let mut path_table = Table::new();
-            path_table.set_titles(row![
-                "Station and label",
-                "Coords",
-                "Leg Dist",
-                "Total Dist"
-            ]);
+            path_table.set_titles(row!["Station label", "Coords", "Leg Dist", "Total Dist"]);
             for (i, node) in path.iter().enumerate() {
                 if i > 0 {
                     leg_distance = node.distance(&path[i - 1]);
