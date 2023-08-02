@@ -168,6 +168,13 @@ impl Node {
         }
     }
 
+    pub fn short_name(&self) -> String {
+        match self.label.clone().split_once('.') {
+            Some((_, suffix)) => suffix.to_string(),
+            None => self.label.clone(),
+        }
+    }
+
     pub fn get_by_coords(nodes: &[Node], coords: &Point) -> Option<Node> {
         for node in nodes.iter() {
             if node.coords == *coords {
