@@ -1,4 +1,8 @@
+use ordered_float::OrderedFloat;
+use std::cell::RefCell;
 use std::fmt::Display;
+use std::hash::{Hash, Hasher};
+use std::rc::Rc;
 
 #[allow(dead_code)] // TODO: Remove this
 #[derive(Debug)]
@@ -44,16 +48,20 @@ impl Headers {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Hash, Ord, Eq, PartialOrd)]
 pub struct Point {
-    pub x: f64,
-    pub y: f64,
-    pub z: f64,
+    pub x: OrderedFloat<f64>,
+    pub y: OrderedFloat<f64>,
+    pub z: OrderedFloat<f64>,
 }
 
 impl Point {
     pub fn new(x: f64, y: f64, z: f64) -> Self {
-        Self { x, y, z }
+        Self {
+            x: OrderedFloat(x),
+            y: OrderedFloat(y),
+            z: OrderedFloat(z),
+        }
     }
 
     pub fn distance(&self, other: &Point) -> f64 {
@@ -64,26 +72,26 @@ impl Point {
     }
 
     pub fn x_distance(&self, other: &Point) -> f64 {
-        if self.x > other.x {
-            self.x - other.x
+        if *self.x > *other.x {
+            *self.x - *other.x
         } else {
-            other.x - self.x
+            *other.x - *self.x
         }
     }
 
     pub fn y_distance(&self, other: &Point) -> f64 {
-        if self.y > other.y {
-            self.y - other.y
+        if *self.y > *other.y {
+            *self.y - *other.y
         } else {
-            other.y - self.y
+            *other.y - *self.y
         }
     }
 
     pub fn z_distance(&self, other: &Point) -> f64 {
-        if self.z > other.z {
-            self.z - other.z
+        if *self.z > *other.z {
+            *self.z - *other.z
         } else {
-            other.z - self.z
+            *other.z - *self.z
         }
     }
 }
@@ -101,7 +109,7 @@ impl Display for Point {
 }
 
 #[allow(dead_code)] // TODO: Remove this
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Ord, Eq, PartialOrd)]
 pub struct Node {
     pub coords: Point,
     pub label: String,
@@ -112,6 +120,28 @@ pub struct Node {
     pub fixed: bool,
     pub anon: bool,
     pub wall: bool,
+    successors: Rc<RefCell<Vec<(Node, OrderedFloat<f64>)>>>,
+}
+
+impl Hash for Node {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.coords.hash(state);
+        self.label.hash(state);
+        self.underground.hash(state);
+        self.surface.hash(state);
+        self.entrance.hash(state);
+        self.exported.hash(state);
+        self.fixed.hash(state);
+        self.anon.hash(state);
+        self.wall.hash(state);
+        self.wall.hash(state);
+    }
+}
+
+impl PartialEq for Node {
+    fn eq(&self, other: &Self) -> bool {
+        self.coords == other.coords
+    }
 }
 
 impl Node {
@@ -126,7 +156,35 @@ impl Node {
             fixed: false,
             anon: false,
             wall: false,
+            successors: Rc::from(RefCell::from(Vec::new())),
         }
+    }
+
+    pub fn get_by_coords(nodes: &Vec<Node>, coords: &Point) -> Option<Node> {
+        for node in nodes.iter() {
+            if node.coords == *coords {
+                return Some(node.clone());
+            }
+        }
+        None
+    }
+
+    pub fn get_by_name<'a>(nodes: &'a Vec<Node>, name: &str) -> Option<&'a Node> {
+        for node in nodes.iter() {
+            if node.label == name {
+                return Some(&node);
+            }
+        }
+        None
+    }
+
+    pub fn get_successors(&self) -> Vec<(Node, OrderedFloat<f64>)> {
+        Rc::clone(&self.successors).borrow().clone()
+    }
+
+    pub fn add_successor(&self, node: Node) {
+        let distance = OrderedFloat(self.distance(&node));
+        self.successors.borrow_mut().push((node, distance));
     }
 
     pub fn distance(&self, other: &Node) -> f64 {
@@ -162,6 +220,13 @@ impl Leg {
 
     pub fn has_point(&self, other: &Point) -> bool {
         if self.from_coords == *other || self.to_coords == *other {
+            return true;
+        }
+        false
+    }
+
+    pub fn is_from(&self, x: f64, y: f64, z: f64) -> bool {
+        if self.from_coords.x == x && self.from_coords.y == y && self.from_coords.z == z {
             return true;
         }
         false
