@@ -184,17 +184,23 @@ impl Node {
         None
     }
 
-    pub fn get_by_name<'a>(nodes: &'a [Node], name: &str) -> Option<&'a Node> {
-        match nodes.iter().find(|&node| node.label == name) {
-            Some(node) => Some(node),
-            None => {
-                let short_name = match name.split_once('.') {
-                    Some((_, suffix)) => suffix,
-                    None => name,
-                };
-                nodes.iter().find(|&node| node.label.ends_with(short_name))
+    pub fn get_by_name<'a>(nodes: &'a [Node], query: &str) -> Option<&'a Node> {
+        let mut matches = nodes
+            .iter()
+            .filter(|&node| node.label.contains(query))
+            .collect::<Vec<_>>();
+
+        for node in nodes.iter() {
+            if node.label.contains(query) {
+                matches.push(node);
             }
         }
+
+        if matches.len() == 1 {
+            return Some(matches[0]);
+        }
+
+        None
     }
 
     pub fn get_successors(&self) -> Vec<(Node, OrderedFloat<f64>)> {

@@ -1,5 +1,5 @@
 use clap::Parser;
-use log::{error, info};
+use log::info;
 use ordered_float::OrderedFloat;
 use pathfinding::prelude::astar;
 use std::error::Error;
@@ -17,8 +17,8 @@ use prettytable::{format, Table};
 #[derive(Parser)]
 #[command(name = "survex-dist")]
 #[command(author = "Andrew Northall <andrew@northall.me.uk")]
-#[command(version = "0.1.0")]
-#[command(about = "Calculate the distance between two points in a Survex dump3d file")]
+#[command(version = "0.1.4")]
+#[command(about = "Calculate the distance between two points in a Survex dump3d file.")]
 #[command(long_about = None)]
 struct Args {
     file: PathBuf,
@@ -40,7 +40,6 @@ fn main() {
                 "Unable to open file {}. Are you sure it exists and is readable?",
                 args.file.display()
             );
-            error!("{}", msg);
             eprintln!("{}", msg);
             exit(1);
         }
@@ -50,7 +49,6 @@ fn main() {
         Ok(data) => data,
         Err(e) => {
             let msg = format!("Unable to parse file '{}': {}", args.file.display(), e);
-            error!("{}", msg);
             eprintln!("{}", msg);
             exit(1);
         }
@@ -65,7 +63,6 @@ fn main() {
         }
         Err(e) => {
             let msg = format!("Unable to calculate distance: {}", e);
-            error!("{}", msg);
             eprintln!("{}", msg);
             exit(1);
         }
@@ -78,10 +75,14 @@ fn pathfind(
     legs: Vec<Leg>,
     start: Instant,
 ) -> Result<(), Box<dyn Error>> {
-    let start_node = Node::get_by_name(&nodes, &args.start)
-        .unwrap_or_else(|| panic!("Unable to locate node: {}", &args.start));
-    let end_node = Node::get_by_name(&nodes, &args.end)
-        .unwrap_or_else(|| panic!("Unable to locate node: {}", &args.end));
+    let (start_node, end_node) = match get_nodes(args, &nodes) {
+        Ok(nodes) => nodes,
+        Err(e) => {
+            eprintln!("{}", e);
+            exit(1);
+        }
+    };
+
     info!("Start node: {}", &start_node);
     info!("End node: {}", &end_node);
     info!(
@@ -170,11 +171,20 @@ fn pathfind(
                 "Unable to find path between nodes {} and {}.",
                 &args.start, &args.end
             );
-            error!("{}", msg);
             eprintln!("{}", msg);
             exit(1);
         }
     }
 
     Ok(())
+}
+
+fn get_nodes<'a>(args: &Args, nodes: &'a [Node]) -> Result<(&'a Node, &'a Node), Box<dyn Error>> {
+    let error_msg = "Unable to find node. It may not exist, or the name may be ambiguous: ";
+    let start_node =
+        Node::get_by_name(nodes, &args.start).ok_or(format!("{} '{}'.", error_msg, &args.start))?;
+    let end_node =
+        Node::get_by_name(nodes, &args.end).ok_or(format!("{} '{}'.", error_msg, &args.end))?;
+
+    Ok((start_node, end_node))
 }
