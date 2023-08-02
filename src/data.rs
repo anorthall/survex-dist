@@ -4,6 +4,8 @@ use std::fmt::Display;
 use std::hash::{Hash, Hasher};
 use std::rc::Rc;
 
+type Successors = Rc<RefCell<Vec<(Node, OrderedFloat<f64>)>>>;
+
 #[allow(dead_code)] // TODO: Remove this
 #[derive(Debug)]
 pub struct Headers {
@@ -48,7 +50,7 @@ impl Headers {
     }
 }
 
-#[derive(Debug, Clone, Hash, Ord, Eq, PartialOrd)]
+#[derive(Debug, Clone, Ord, Eq, PartialOrd)]
 pub struct Point {
     pub x: OrderedFloat<f64>,
     pub y: OrderedFloat<f64>,
@@ -102,6 +104,14 @@ impl PartialEq for Point {
     }
 }
 
+impl Hash for Point {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.x.hash(state);
+        self.y.hash(state);
+        self.z.hash(state);
+    }
+}
+
 impl Display for Point {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}, {}, {}", self.x, self.y, self.z)
@@ -120,7 +130,7 @@ pub struct Node {
     pub fixed: bool,
     pub anon: bool,
     pub wall: bool,
-    successors: Rc<RefCell<Vec<(Node, OrderedFloat<f64>)>>>,
+    successors: Successors,
 }
 
 impl Hash for Node {
@@ -160,7 +170,7 @@ impl Node {
         }
     }
 
-    pub fn get_by_coords(nodes: &Vec<Node>, coords: &Point) -> Option<Node> {
+    pub fn get_by_coords(nodes: &[Node], coords: &Point) -> Option<Node> {
         for node in nodes.iter() {
             if node.coords == *coords {
                 return Some(node.clone());
@@ -169,13 +179,8 @@ impl Node {
         None
     }
 
-    pub fn get_by_name<'a>(nodes: &'a Vec<Node>, name: &str) -> Option<&'a Node> {
-        for node in nodes.iter() {
-            if node.label == name {
-                return Some(&node);
-            }
-        }
-        None
+    pub fn get_by_name<'a>(nodes: &'a [Node], name: &str) -> Option<&'a Node> {
+        nodes.iter().find(|&node| node.label == name)
     }
 
     pub fn get_successors(&self) -> Vec<(Node, OrderedFloat<f64>)> {

@@ -73,31 +73,31 @@ fn main() {
 
 fn pathfind(args: &Args, nodes: Vec<Node>, legs: Vec<Leg>) -> Result<(), Box<dyn Error>> {
     let start_node = Node::get_by_name(&nodes, &args.start)
-        .expect(&format!("Unable to locate node: {}", &args.start));
+        .unwrap_or_else(|| panic!("Unable to locate node: {}", &args.start));
     let end_node = Node::get_by_name(&nodes, &args.end)
-        .expect(&format!("Unable to locate node: {}", &args.end));
+        .unwrap_or_else(|| panic!("Unable to locate node: {}", &args.end));
     info!("Start node: {}", &start_node);
     info!("End node: {}", &end_node);
     info!(
         "Straight line distance between nodes: {:.2}m",
-        start_node.distance(&end_node)
+        start_node.distance(end_node)
     );
 
-    for leg in legs.iter().map(|leg| leg.clone()) {
+    for leg in legs.iter().cloned() {
         for node in nodes.iter() {
             if node.coords == leg.from_coords {
                 let candidate_node = Node::get_by_coords(&nodes, &leg.to_coords);
-                if candidate_node.is_none() {
-                    info!("Unable to find node with coords: {}", &leg.to_coords);
+                if let Some(candidate_node) = candidate_node {
+                    node.add_successor(candidate_node);
                 } else {
-                    node.add_successor(candidate_node.unwrap());
+                    info!("Unable to find node with coords: {}", &leg.to_coords);
                 }
             } else if node.coords == leg.to_coords {
                 let candidate_node = Node::get_by_coords(&nodes, &leg.from_coords);
-                if candidate_node.is_none() {
-                    info!("Unable to find node with coords: {}", &leg.from_coords);
+                if let Some(candidate_node) = candidate_node {
+                    node.add_successor(candidate_node);
                 } else {
-                    node.add_successor(candidate_node.unwrap());
+                    info!("Unable to find node with coords: {}", &leg.from_coords);
                 }
             }
         }
@@ -106,7 +106,7 @@ fn pathfind(args: &Args, nodes: Vec<Node>, legs: Vec<Leg>) -> Result<(), Box<dyn
     let result = astar(
         start_node,
         |node| node.get_successors(),
-        |node| OrderedFloat(node.distance(&end_node)),
+        |node| OrderedFloat(node.distance(end_node)),
         |node| *node == *end_node,
     );
 
@@ -129,7 +129,7 @@ fn pathfind(args: &Args, nodes: Vec<Node>, legs: Vec<Leg>) -> Result<(), Box<dyn
             println!("Path length: {} stations", path.len());
             println!(
                 "Straight line distance between stations: {:.2}m",
-                start_node.distance(&end_node)
+                start_node.distance(end_node)
             );
             println!("Walking/survey distance between stations: {:.2}m", distance);
         }
