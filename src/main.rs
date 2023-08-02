@@ -120,16 +120,19 @@ fn pathfind(
         Some(result) => {
             let (path, _) = result;
             let mut distance = 0.0_f64;
+            let mut leg_distance = 0.0_f64;
             let mut path_table = Table::new();
-            path_table.set_titles(row!["Station and label", "Coords", "Distance"]);
+            path_table.set_titles(row!["Station and label", "Coords", "T. Dist", "Leg Dist"]);
             for (i, node) in path.iter().enumerate() {
                 if i > 0 {
-                    distance += node.distance(&path[i - 1]);
+                    leg_distance = node.distance(&path[i - 1]);
+                    distance += leg_distance;
                 }
                 path_table.add_row(row![
                     node.label,
                     format!("{}", node.coords),
-                    format!("{:.2}m", distance)
+                    format!("{:.2}m", distance),
+                    format!("{:.2}m", leg_distance),
                 ]);
             }
 
@@ -137,6 +140,10 @@ fn pathfind(
             meta_table.add_row(row!["Origin station", &start_node.label]);
             meta_table.add_row(row!["Destination station", &end_node.label]);
             meta_table.add_row(row!["Path length", format!("{} stations", path.len())]);
+            meta_table.add_row(row![
+                "Average leg length",
+                format!("{:.2}m", distance / path.len() as f64)
+            ]);
             meta_table.add_row(row![
                 "Straight line distance",
                 format!("{:.2}m", start_node.distance(end_node))
