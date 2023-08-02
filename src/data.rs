@@ -113,7 +113,7 @@ impl Hash for Point {
 
 impl Display for Point {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}, {}, {}", self.x, self.y, self.z)
+        write!(f, "{:.2}, {:.2}, {:.2}", self.x, self.y, self.z)
     }
 }
 
