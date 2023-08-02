@@ -6,7 +6,6 @@ use std::rc::Rc;
 
 type Successors = Rc<RefCell<Vec<(Node, OrderedFloat<f64>)>>>;
 
-#[allow(dead_code)] // TODO: Remove this
 #[derive(Debug)]
 pub struct Headers {
     pub title: String,
@@ -118,7 +117,6 @@ impl Display for Point {
     }
 }
 
-#[allow(dead_code)] // TODO: Remove this
 #[derive(Debug, Clone, Ord, Eq, PartialOrd)]
 pub struct Node {
     pub coords: Point,
