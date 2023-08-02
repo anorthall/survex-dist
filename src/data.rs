@@ -185,16 +185,10 @@ impl Node {
     }
 
     pub fn get_by_name<'a>(nodes: &'a [Node], query: &str) -> Option<&'a Node> {
-        let mut matches = nodes
+        let matches = nodes
             .iter()
             .filter(|&node| node.label.contains(query))
             .collect::<Vec<_>>();
-
-        for node in nodes.iter() {
-            if node.label.contains(query) {
-                matches.push(node);
-            }
-        }
 
         if matches.len() == 1 {
             return Some(matches[0]);

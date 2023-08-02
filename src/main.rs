@@ -180,7 +180,7 @@ fn pathfind(
 }
 
 fn get_nodes<'a>(args: &Args, nodes: &'a [Node]) -> Result<(&'a Node, &'a Node), Box<dyn Error>> {
-    let error_msg = "Unable to find node. It may not exist, or the name may be ambiguous: ";
+    let error_msg = "Unable to find node. It may not exist, or the name may be ambiguous:";
     let start_node =
         Node::get_by_name(nodes, &args.start).ok_or(format!("{} '{}'.", error_msg, &args.start))?;
     let end_node =
