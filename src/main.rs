@@ -37,7 +37,7 @@ fn main() {
         }
     };
 
-    let _data = match parse_dump3d(file) {
+    let (_headers, nodes, legs) = match parse_dump3d(file) {
         Ok(data) => data,
         Err(e) => {
             let msg = format!("Unable to parse file '{}': {}", args.file.display(), e);
@@ -48,4 +48,5 @@ fn main() {
     };
 
     info!("Successfully parsed file '{}'.", args.file.display());
+    info!("Found {} nodes and {} legs.", nodes.len(), legs.len());
 }

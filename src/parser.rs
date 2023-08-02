@@ -1,31 +1,35 @@
-use crate::data::{Dump3D, Leg, Node};
+use crate::data::{Headers, Leg, Node, Point};
 use log::{info, trace};
 use std::error::Error;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 
-pub fn parse_dump3d(file: File) -> Result<Dump3D, Box<dyn Error>> {
+type Parsed = (Headers, Vec<Node>, Vec<Leg>);
+
+pub fn parse_dump3d(file: File) -> Result<Parsed, Box<dyn Error>> {
     // Create a reader
     let mut reader = BufReader::new(&file);
     let mut current_line = 0;
 
     // Parse headers
     info!("Reading headers.");
-    let mut data = parse_headers(&mut reader, &mut current_line)?;
+    let headers = parse_headers(&mut reader, &mut current_line)?;
     info!("Parsed {} header lines.", current_line - 1);
-    info!("{}", data);
+    info!("{}", headers);
 
     // Parse the data in the file
     // Reference for dump3d format: https://github.com/ojwb/survex/blob/master/src/dump3d.c
+    let mut legs = Vec::new();
+    let mut nodes = Vec::new();
     info!("Parsing data from dump3d file.");
     for line in reader.lines() {
         current_line += 1;
         let line = line?;
         if let Some(param) = line.strip_prefix("NODE ") {
-            match parse_node(param) {
+            match parse_node(param.to_string()) {
                 Ok(node) => {
-                    trace!("Parsed NODE: {:?}", node);
-                    data.nodes.push(node)
+                    trace!("Parsed NODE: {:?}", &node);
+                    nodes.push(node);
                 }
                 Err(e) => {
                     return Err(
@@ -34,10 +38,10 @@ pub fn parse_dump3d(file: File) -> Result<Dump3D, Box<dyn Error>> {
                 }
             }
         } else if let Some(param) = line.strip_prefix("LEG ") {
-            match parse_leg(param) {
+            match parse_leg(param.to_string()) {
                 Ok(leg) => {
-                    trace!("Parsed LEG: {:?}", leg);
-                    data.legs.push(leg)
+                    trace!("Parsed LEG: {:?}", &leg);
+                    legs.push(leg);
                 }
                 Err(e) => {
                     return Err(
@@ -63,8 +67,8 @@ pub fn parse_dump3d(file: File) -> Result<Dump3D, Box<dyn Error>> {
                 "STOP reached. {} lines processed. Parsing complete.",
                 current_line
             );
-            let num_nodes = data.nodes.len();
-            let num_legs = data.legs.len();
+            let num_nodes = nodes.len();
+            let num_legs = legs.len();
             info!("Parsed {} nodes.", num_nodes);
             info!("Parsed {} legs.", num_legs);
             break;
@@ -73,13 +77,13 @@ pub fn parse_dump3d(file: File) -> Result<Dump3D, Box<dyn Error>> {
         }
     }
 
-    Ok(data)
+    Ok((headers, nodes, legs))
 }
 
 fn parse_headers(
     reader: &mut BufReader<&File>,
     current_line: &mut u64,
-) -> Result<Dump3D, Box<dyn Error>> {
+) -> Result<Headers, Box<dyn Error>> {
     let mut title = String::new();
     let mut date = String::new();
     let mut date_numeric = 0_u64;
@@ -121,7 +125,7 @@ fn parse_headers(
         }
     }
 
-    Ok(Dump3D::new(
+    Ok(Headers::new(
         title,
         date,
         date_numeric,
@@ -132,7 +136,7 @@ fn parse_headers(
     ))
 }
 
-fn parse_node(node_line: &str) -> Result<Node, Box<dyn Error>> {
+fn parse_node(node_line: String) -> Result<Node, Box<dyn Error>> {
     let split = node_line.split(' ');
     let params = split.collect::<Vec<&str>>();
 
@@ -140,13 +144,15 @@ fn parse_node(node_line: &str) -> Result<Node, Box<dyn Error>> {
         return Err(format!("Invalid node line: {}", node_line).into());
     }
 
-    let x = params[0].parse::<f64>()?;
-    let y = params[1].parse::<f64>()?;
-    let z = params[2].parse::<f64>()?;
+    let coords = Point::new(
+        params[0].parse::<f64>()?,
+        params[1].parse::<f64>()?,
+        params[2].parse::<f64>()?,
+    );
     let mut label = params[3][1..].to_string();
     label.pop(); // Remove trailing ']'
 
-    let mut node = Node::new(x, y, z, label);
+    let mut node = Node::new(coords, label);
 
     if params.len() > 4 {
         for param in params[4..].iter() {
@@ -166,7 +172,7 @@ fn parse_node(node_line: &str) -> Result<Node, Box<dyn Error>> {
     Ok(node)
 }
 
-fn parse_leg(leg_line: &str) -> Result<Leg, Box<dyn Error>> {
+fn parse_leg(leg_line: String) -> Result<Leg, Box<dyn Error>> {
     let split = leg_line.split(' ');
     let params = split.collect::<Vec<&str>>();
 
@@ -174,12 +180,16 @@ fn parse_leg(leg_line: &str) -> Result<Leg, Box<dyn Error>> {
         return Err(format!("Invalid leg line: {}", leg_line).into());
     }
 
-    let from_x = params[0].parse::<f64>()?;
-    let from_y = params[1].parse::<f64>()?;
-    let from_z = params[2].parse::<f64>()?;
-    let to_x = params[3].parse::<f64>()?;
-    let to_y = params[4].parse::<f64>()?;
-    let to_z = params[5].parse::<f64>()?;
+    let from_coords = Point::new(
+        params[0].parse::<f64>()?,
+        params[1].parse::<f64>()?,
+        params[2].parse::<f64>()?,
+    );
+    let to_coords = Point::new(
+        params[3].parse::<f64>()?,
+        params[4].parse::<f64>()?,
+        params[5].parse::<f64>()?,
+    );
 
     let mut label = None;
     let mut raw_label = params[6][1..].trim().to_string();
@@ -189,10 +199,13 @@ fn parse_leg(leg_line: &str) -> Result<Leg, Box<dyn Error>> {
         label = Some(raw_label.to_string());
     }
 
-    Ok(Leg::new(from_x, from_y, from_z, to_x, to_y, to_z, label))
+    Ok(Leg::new(from_coords, to_coords, label))
 }
 
+#[cfg(test)]
 mod tests {
+    use crate::data::Point;
+
     #[test]
     fn test_all_valid_headers() {
         let file = std::fs::File::open("tests/files/valid_headers.txt").unwrap();
@@ -238,11 +251,9 @@ mod tests {
 
     #[test]
     fn test_parse_valid_node_without_flags() {
-        let basic_node = "12345.00 67890.00 100.00 [basic]";
+        let basic_node = String::from("12345.00 67890.00 100.00 [basic]");
         let node = super::parse_node(basic_node).unwrap();
-        assert_eq!(node.x, 12345.00);
-        assert_eq!(node.y, 67890.00);
-        assert_eq!(node.z, 100.00);
+        assert_eq!(node.coords, Point::new(12345.00, 67890.00, 100.00));
         assert_eq!(node.label, "basic");
         assert_eq!(node.underground, false);
         assert_eq!(node.surface, false);
@@ -255,11 +266,9 @@ mod tests {
 
     #[test]
     fn test_parse_valid_node_with_flags() {
-        let all_flags = "54321.00 09876.00 200.00 [all_flags] SURFACE UNDERGROUND ENTRANCE EXPORTED FIXED ANON WALL";
+        let all_flags = String::from("54321.00 09876.00 200.00 [all_flags] SURFACE UNDERGROUND ENTRANCE EXPORTED FIXED ANON WALL");
         let node = super::parse_node(all_flags).unwrap();
-        assert_eq!(node.x, 54321.00);
-        assert_eq!(node.y, 09876.00);
-        assert_eq!(node.z, 200.00);
+        assert_eq!(node.coords, Point::new(54321.00, 09876.00, 200.00));
         assert_eq!(node.label, "all_flags");
         assert_eq!(node.underground, true);
         assert_eq!(node.surface, true);
@@ -272,7 +281,7 @@ mod tests {
 
     #[test]
     fn test_invalid_node_flag() {
-        let invalid_flag = "12345.00 67890.00 100.00 [invalid] INVALID";
+        let invalid_flag = String::from("12345.00 67890.00 100.00 [invalid] INVALID");
         let node = super::parse_node(invalid_flag);
         assert!(node.is_err());
         assert!(node
@@ -283,8 +292,8 @@ mod tests {
 
     #[test]
     fn test_poorly_formatted_node_line() {
-        let invalid_node = "12345 67890 [invalid]";
-        let node = super::parse_node(invalid_node);
+        let invalid_node = String::from("12345 67890 [invalid]");
+        let node = super::parse_node(invalid_node.clone());
         assert!(node.is_err());
         assert!(node
             .unwrap_err()
@@ -294,34 +303,27 @@ mod tests {
 
     #[test]
     fn test_parse_valid_leg_without_label() {
-        let valid_leg = "66660.17 78509.31 296.16 66660.17 78509.31 297.74 []";
+        let valid_leg = String::from("66660.17 78509.31 296.16 66660.17 78509.31 297.74 []");
         let leg = super::parse_leg(valid_leg).unwrap();
-        assert_eq!(leg.from_x, 66660.17);
-        assert_eq!(leg.from_y, 78509.31);
-        assert_eq!(leg.from_z, 296.16);
-        assert_eq!(leg.to_x, 66660.17);
-        assert_eq!(leg.to_y, 78509.31);
-        assert_eq!(leg.to_z, 297.74);
+        assert_eq!(leg.from_coords, Point::new(66660.17, 78509.31, 296.16));
+        assert_eq!(leg.to_coords, Point::new(66660.17, 78509.31, 297.74));
         assert_eq!(leg.label, None);
     }
 
     #[test]
     fn test_parse_valid_leg_with_label() {
-        let valid_leg = "66660.17 78509.31 296.16 66660.17 78509.31 297.74 [valid_leg]";
+        let valid_leg =
+            String::from("66660.17 78509.31 296.16 66660.17 78509.31 297.74 [valid_leg]");
         let leg = super::parse_leg(valid_leg).unwrap();
-        assert_eq!(leg.from_x, 66660.17);
-        assert_eq!(leg.from_y, 78509.31);
-        assert_eq!(leg.from_z, 296.16);
-        assert_eq!(leg.to_x, 66660.17);
-        assert_eq!(leg.to_y, 78509.31);
-        assert_eq!(leg.to_z, 297.74);
+        assert_eq!(leg.from_coords, Point::new(66660.17, 78509.31, 296.16));
+        assert_eq!(leg.to_coords, Point::new(66660.17, 78509.31, 297.74));
         assert_eq!(leg.label, Some(String::from("valid_leg")));
     }
 
     #[test]
     fn test_poorly_formatted_leg_line() {
-        let invalid_leg = "66660.17 78509.31 296.16 66660.17 78509.31 297.74";
-        let leg = super::parse_leg(invalid_leg);
+        let invalid_leg = String::from("66660.17 78509.31 296.16 66660.17 78509.31 297.74");
+        let leg = super::parse_leg(invalid_leg.clone());
         assert!(leg.is_err());
         assert!(leg
             .unwrap_err()
