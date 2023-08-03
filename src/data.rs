@@ -1,5 +1,7 @@
+use crate::command::fatal_error;
 use ordered_float::OrderedFloat;
 use std::cell::RefCell;
+use std::error::Error;
 use std::fmt::Display;
 use std::hash::{Hash, Hasher};
 use std::rc::Rc;
@@ -168,6 +170,21 @@ impl Node {
         }
     }
 
+    /// Iterate through a vector of nodes and attach legs to them as successors.
+    pub fn attach_legs(nodes: &[Node], legs: &[Leg]) -> Result<(), Box<dyn Error>> {
+        for leg in legs.iter() {
+            for node in nodes.iter() {
+                if node.coords == leg.from_coords {
+                    node.add_successor(Node::get_by_coords(nodes, &leg.to_coords));
+                } else if node.coords == leg.to_coords {
+                    node.add_successor(Node::get_by_coords(nodes, &leg.from_coords));
+                }
+            }
+        }
+
+        Ok(())
+    }
+
     pub fn short_name(&self) -> String {
         match self.label.clone().split_once('.') {
             Some((_, suffix)) => suffix.to_string(),
@@ -175,26 +192,34 @@ impl Node {
         }
     }
 
-    pub fn get_by_coords(nodes: &[Node], coords: &Point) -> Option<Node> {
+    pub fn get_by_coords(nodes: &[Node], coords: &Point) -> Node {
         for node in nodes.iter() {
             if node.coords == *coords {
-                return Some(node.clone());
+                return node.clone();
             }
         }
-        None
+        fatal_error(format!("Unable to find node with coordinates {}.", coords));
     }
 
-    pub fn get_by_name<'a>(nodes: &'a [Node], query: &str) -> Option<&'a Node> {
+    pub fn get_by_name<'a>(nodes: &'a [Node], query: &str) -> &'a Node {
         let matches = nodes
             .iter()
             .filter(|&node| node.label.contains(query))
             .collect::<Vec<_>>();
 
+        // If there is only one match, return it, otherwise try to match the full name.
         if matches.len() == 1 {
-            return Some(matches[0]);
+            return matches[0];
+        } else {
+            for node in matches.iter() {
+                if node.label == query {
+                    return node;
+                }
+            }
         }
 
-        None
+        let help = "If the node name is ambiguous, you may need to use the full name.";
+        fatal_error(format!("Unable to find node: {}\n{}", query, help));
     }
 
     pub fn get_successors(&self) -> Vec<(Node, OrderedFloat<f64>)> {
