@@ -1,6 +1,6 @@
 [package]
 name = "survex-dist"
-description = "A tool to calculate the distance between two stations in a Survex dump3d file"
+description = "A tool to calculate the distance between two stations in a Survex dump3d file."
 authors = ["Andrew Northall <andrew@northall.me.uk>"]
 version = "0.1.4"
 edition = "2021"
@@ -12,7 +12,7 @@ name = "survex_dist"
 path = "src/lib.rs"
 
 [dependencies]
-clap = { version = "4.3.19", features = ["derive"] }
+clap = { version = "4.3.19", features = ["derive", "cargo"] }
 log = "0.4"
 env_logger = "0.10"
 pathfinding = "4.3"

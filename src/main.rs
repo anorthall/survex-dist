@@ -16,23 +16,25 @@ use prettytable::{format, Table};
 
 #[derive(Parser)]
 #[command(name = "survex-dist")]
-#[command(author = "Andrew Northall <andrew@northall.me.uk")]
-#[command(version = "0.1.4")]
-#[command(about = "Calculate the distance between two points in a Survex dump3d file.")]
-#[command(long_about = None)]
+#[command(author, version, about)]
+#[command(
+    long_about = "For information on usage, please see https://github.com/anorthall/survex-dist"
+)]
 struct Args {
+    /// The file to process.
     file: PathBuf,
+    /// The survey station to start from. Partial matches are allowed.
     start: String,
+    /// The survey station to end at. Partial matches are allowed.
     end: String,
 }
 
 fn main() {
-    let start = Instant::now();
     env_logger::init();
-
+    let start = Instant::now();
     let args = Args::parse();
-    info!("Processing file '{}'.", args.file.display(),);
 
+    info!("Processing file '{}'.", args.file.display(),);
     let file = match File::open(&args.file) {
         Ok(file) => file,
         Err(_) => {
