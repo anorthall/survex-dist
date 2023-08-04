@@ -19,15 +19,18 @@ use std::process::exit;
 pub struct Args {
     /// The file to process.
     pub file: PathBuf,
-    /// The survey station to start from. Partial matches are allowed.
+    /// The survey station to start from
     pub start: String,
-    /// The survey station to end at. Partial matches are allowed.
+    /// The survey station to end at
     pub end: String,
+    /// Exclude a survey station from the route
+    #[clap(short, long)]
+    pub exclude: Vec<String>,
     /// The output format to use.
     #[clap(short, long, default_value = "table")]
     pub format: output::Format,
     /// Do not print the path taken.
-    #[clap(long)]
+    #[clap(short, long)]
     pub no_path: bool,
 }
 
@@ -44,6 +47,9 @@ pub fn run() -> Result<(), Box<dyn Error>> {
     // Parse the dump3d file.
     let (_headers, nodes, legs) = parse_dump3d(file)?;
 
+    // Find the excluded nodes.
+    let (nodes, excluded) = Node::exclude_nodes(&nodes, &args.exclude);
+
     // Find the start and end nodes.
     let start = Node::get_by_name(&nodes, &args.start);
     let end = Node::get_by_name(&nodes, &args.end);
@@ -57,7 +63,7 @@ pub fn run() -> Result<(), Box<dyn Error>> {
     let path = pathfind(start, end);
 
     // Output the results.
-    let output = CommandOutput::new(start_time, args, path);
+    let output = CommandOutput::new(start_time, args, path, excluded);
     output.print()?;
 
     Ok(())

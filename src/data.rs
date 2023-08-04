@@ -1,9 +1,11 @@
 use crate::command::fatal_error;
+use log::info;
 use ordered_float::OrderedFloat;
 use std::cell::RefCell;
 use std::error::Error;
 use std::fmt::Display;
 use std::hash::{Hash, Hasher};
+use std::process::exit;
 use std::rc::Rc;
 
 type Successors = Rc<RefCell<Vec<(Node, OrderedFloat<f64>)>>>;
@@ -175,14 +177,46 @@ impl Node {
         for leg in legs.iter() {
             for node in nodes.iter() {
                 if node.coords == leg.from_coords {
-                    node.add_successor(Node::get_by_coords(nodes, &leg.to_coords));
+                    node.add_successor(nodes, &leg.to_coords);
                 } else if node.coords == leg.to_coords {
-                    node.add_successor(Node::get_by_coords(nodes, &leg.from_coords));
+                    node.add_successor(nodes, &leg.from_coords);
                 }
             }
         }
 
         Ok(())
+    }
+
+    /// Iterate through a vector of nodes and exclude nodes which match the query. Return
+    /// a tuple of remaining nodes and excluded node names.
+    pub fn exclude_nodes(nodes: &[Node], exclude: &[String]) -> (Vec<Node>, Vec<String>) {
+        let mut remaining_nodes = Vec::new();
+        let mut excluded_node_names = Vec::new();
+
+        for query in exclude.iter() {
+            // This will check that the query is a valid node name and that it is unique.
+            // After this check, it is safe to assume that any node name containing the query
+            // will match exactly one node.
+            let _ = Node::get_by_name(nodes, query);
+        }
+
+        for node in nodes.iter() {
+            let mut excluded = false;
+            for query in exclude.iter() {
+                if node.label.contains(query) {
+                    excluded = true;
+                    break;
+                }
+            }
+
+            if excluded {
+                excluded_node_names.push(node.clone().short_name());
+            } else {
+                remaining_nodes.push(node.clone());
+            }
+        }
+
+        (remaining_nodes, excluded_node_names)
     }
 
     pub fn short_name(&self) -> String {
@@ -192,15 +226,16 @@ impl Node {
         }
     }
 
-    pub fn get_by_coords(nodes: &[Node], coords: &Point) -> Node {
+    fn get_by_coords(nodes: &[Node], coords: &Point) -> Option<Node> {
         for node in nodes.iter() {
             if node.coords == *coords {
-                return node.clone();
+                return Some(node.clone());
             }
         }
-        fatal_error(format!("Unable to find node with coordinates {}.", coords));
+        None
     }
 
+    #[allow(clippy::comparison_chain)]
     pub fn get_by_name<'a>(nodes: &'a [Node], query: &str) -> &'a Node {
         let matches = nodes
             .iter()
@@ -218,17 +253,38 @@ impl Node {
             }
         }
 
-        let help = "If the node name is ambiguous, you may need to use the full name.";
-        fatal_error(format!("Unable to find node: {}\n{}", query, help));
+        if matches.is_empty() {
+            let help = "No station name fully or partially matched the query.";
+            fatal_error(format!("Unable to find station: {}\n{}", query, help));
+        }
+
+        // There must be multiple matches.
+        eprintln!("The station name is ambiguous, try being more specific.\n");
+        eprintln!("{} matched the following stations:\n", query);
+        for (i, node) in matches.iter().enumerate() {
+            if i < 20 {
+                eprintln!("{}", node.label);
+            } else if i == 20 {
+                eprintln!("... ({} more)", matches.len() - 20);
+            }
+        }
+        exit(1);
     }
 
     pub fn get_successors(&self) -> Vec<(Node, OrderedFloat<f64>)> {
         Rc::clone(&self.successors).borrow().clone()
     }
 
-    pub fn add_successor(&self, node: Node) {
-        let distance = OrderedFloat(self.distance(&node));
-        self.successors.borrow_mut().push((node, distance));
+    pub fn add_successor(&self, nodes: &[Node], coords: &Point) {
+        match Node::get_by_coords(nodes, coords) {
+            Some(node) => {
+                let distance = OrderedFloat(self.distance(&node));
+                self.successors.borrow_mut().push((node, distance));
+            }
+            None => {
+                info!("Unable to find node with coordinates: {}", coords);
+            }
+        }
     }
 
     pub fn distance(&self, other: &Node) -> f64 {

@@ -9,12 +9,12 @@ affiliated with the Survex project.
 * Calculate the shortest walking distance between any two stations in the cave system
   using A* pathfinding.
 * Output to different formats: plain text, table, JSON.
+* Avoid certain passages by specifying a list of stations to avoid.
 
 ### Planned
 * Process Survex `.3d` files directly.
 * Produce a graphical representation of the cave system and path.
-* Allow 'via' and 'avoid' options, forcing the pathfinding algorithm to take a
-  particular route or avoid a particular route.
+* Allow a 'via' option, forcing the pathfinding algorithm to take a particular route.
 * A web interface to allow the application to be used without installing it locally.
 
 ## Usage

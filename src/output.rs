@@ -9,6 +9,8 @@ pub struct CommandOutput {
     path: Vec<PathLine>,
     metadata: Vec<MetadataItem>,
     #[serde(skip)]
+    excluded: Vec<String>,
+    #[serde(skip)]
     start_time: Instant,
     #[serde(skip)]
     format: Format,
@@ -17,7 +19,12 @@ pub struct CommandOutput {
 }
 
 impl CommandOutput {
-    pub fn new(start_time: Instant, args: Args, path: Vec<Node>) -> CommandOutput {
+    pub fn new(
+        start_time: Instant,
+        args: Args,
+        path: Vec<Node>,
+        excluded: Vec<String>,
+    ) -> CommandOutput {
         let expect_msg = "Path must have at least one node.";
         let start_node = path.first().expect(expect_msg).clone();
         let end_node = path.last().expect(expect_msg).clone();
@@ -36,6 +43,7 @@ impl CommandOutput {
 
         let mut output = CommandOutput {
             start_time,
+            excluded,
             format: args.format,
             path: path_lines,
             metadata: Vec::new(),
@@ -87,6 +95,11 @@ impl CommandOutput {
         self.add_metadata("Path distance", &format!("{:.2}m", path_distance));
         self.add_metadata("Straight line distance", &format!("{:.2}m", sl_distance));
         self.add_metadata("Time taken", &format!("{:.2?}", self.start_time.elapsed()));
+
+        let excluded = self.excluded.clone();
+        for station in excluded {
+            self.add_metadata("Excluded station", station.as_str());
+        }
     }
 
     fn add_metadata(&mut self, name: &str, value: &str) {
