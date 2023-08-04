@@ -1,3 +1,4 @@
+use crate::command::Args;
 use crate::data::Node;
 use serde::Serialize;
 use std::error::Error;
@@ -13,12 +14,10 @@ pub struct CommandOutput {
     format: Format,
     #[serde(skip)]
     print_path: bool,
-    #[serde(skip)]
-    print_metadata: bool,
 }
 
 impl CommandOutput {
-    pub fn new(start_time: Instant, format: Format, path: Vec<Node>) -> CommandOutput {
+    pub fn new(start_time: Instant, args: Args, path: Vec<Node>) -> CommandOutput {
         let expect_msg = "Path must have at least one node.";
         let start_node = path.first().expect(expect_msg).clone();
         let end_node = path.last().expect(expect_msg).clone();
@@ -37,11 +36,10 @@ impl CommandOutput {
 
         let mut output = CommandOutput {
             start_time,
-            format,
+            format: args.format,
             path: path_lines,
             metadata: Vec::new(),
-            print_path: true,
-            print_metadata: true,
+            print_path: !args.no_path,
         };
 
         output.build_metadata(start_node, end_node, path_distance);
@@ -61,12 +59,9 @@ impl CommandOutput {
     fn print_table(&self) {
         if self.print_path {
             table::print_path(self);
-        }
-
-        if self.print_metadata {
             println!();
-            table::print_metadata(self);
         }
+        table::print_metadata(self);
     }
 
     fn print_json(&self) -> Result<(), Box<dyn Error>> {
@@ -79,12 +74,9 @@ impl CommandOutput {
     fn print_text(&self) {
         if self.print_path {
             text::print_path(self);
-        }
-
-        if self.print_metadata {
             println!("\n");
-            text::print_metadata(self);
         }
+        text::print_metadata(self);
     }
 
     fn build_metadata(&mut self, start_node: Node, end_node: Node, path_distance: f64) {

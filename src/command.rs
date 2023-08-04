@@ -26,6 +26,9 @@ pub struct Args {
     /// The output format to use.
     #[clap(short, long, default_value = "table")]
     pub format: output::Format,
+    /// Do not print the path taken.
+    #[clap(long)]
+    pub no_path: bool,
 }
 
 pub fn run() -> Result<(), Box<dyn Error>> {
@@ -54,7 +57,7 @@ pub fn run() -> Result<(), Box<dyn Error>> {
     let path = pathfind(start, end);
 
     // Output the results.
-    let output = CommandOutput::new(start_time, args.format, path);
+    let output = CommandOutput::new(start_time, args, path);
     output.print()?;
 
     Ok(())
