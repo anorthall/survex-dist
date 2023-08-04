@@ -8,9 +8,9 @@ affiliated with the Survex project.
 * Process Survex `dump3d` files to create a graph of the cave system.
 * Calculate the shortest walking distance between any two stations in the cave system
   using A* pathfinding.
+* Output to different formats: plain text, table, JSON.
 
 ### Planned
-* Output to different formats: JSON, CSV, HTML, plain text.
 * Process Survex `.3d` files directly.
 * Produce a graphical representation of the cave system and path.
 * Allow 'via' and 'avoid' options, forcing the pathfinding algorithm to take a
@@ -159,7 +159,8 @@ be printed to the terminal.
 
 ### Help
 If you need any assistance using the program, please either raise an issue on GitHub
-or contact me directly via email at `andrew@caver.dev`.
+or contact me directly via email at `andrew@caver.dev`. For more information about
+program options, run `survex-dist --help`.
 
 ## Contributing
 Pull requests are welcome.

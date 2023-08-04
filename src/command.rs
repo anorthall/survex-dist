@@ -1,5 +1,6 @@
 use crate::data::Node;
-use crate::output::{print_metadata_as_table, print_path_as_table};
+use crate::output;
+use crate::output::CommandOutput;
 use crate::parser::parse_dump3d;
 use crate::pathfinding::pathfind;
 use clap::Parser;
@@ -22,6 +23,9 @@ pub struct Args {
     pub start: String,
     /// The survey station to end at. Partial matches are allowed.
     pub end: String,
+    /// The output format to use.
+    #[clap(short, long, default_value = "table")]
+    pub format: output::Format,
 }
 
 pub fn run() -> Result<(), Box<dyn Error>> {
@@ -47,13 +51,11 @@ pub fn run() -> Result<(), Box<dyn Error>> {
     info!("Found {} nodes and {} legs.", nodes.len(), legs.len());
 
     // Run the pathfinding algorithm.
-    let (path, cost) = pathfind(start, end);
+    let path = pathfind(start, end);
 
-    // TODO: Implement different output formats.
-    // Print the output as a table.
-    print_path_as_table(&path);
-    println!();
-    print_metadata_as_table(&path, &cost, start_time);
+    // Output the results.
+    let output = CommandOutput::new(start_time, args.format, path);
+    output.print()?;
 
     Ok(())
 }
