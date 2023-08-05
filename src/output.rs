@@ -11,6 +11,8 @@ pub struct CommandOutput {
     #[serde(skip)]
     excluded: Vec<String>,
     #[serde(skip)]
+    via: Vec<String>,
+    #[serde(skip)]
     start_time: Instant,
     #[serde(skip)]
     format: Format,
@@ -24,6 +26,7 @@ impl CommandOutput {
         args: Args,
         path: Vec<Node>,
         excluded: Vec<String>,
+        via: Vec<String>,
     ) -> CommandOutput {
         let expect_msg = "Path must have at least one node.";
         let start_node = path.first().expect(expect_msg).clone();
@@ -44,6 +47,7 @@ impl CommandOutput {
         let mut output = CommandOutput {
             start_time,
             excluded,
+            via,
             format: args.format,
             path: path_lines,
             metadata: Vec::new(),
@@ -99,6 +103,11 @@ impl CommandOutput {
         let excluded = self.excluded.clone();
         for station in excluded {
             self.add_metadata("Excluded station", station.as_str());
+        }
+
+        let via = self.via.clone();
+        for station in via {
+            self.add_metadata("Via station", station.as_str());
         }
     }
 

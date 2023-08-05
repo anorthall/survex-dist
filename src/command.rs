@@ -2,7 +2,7 @@ use crate::data::Node;
 use crate::output;
 use crate::output::CommandOutput;
 use crate::parser::parse_dump3d;
-use crate::pathfinding::pathfind;
+use crate::pathfinding::pathfind_route;
 use clap::Parser;
 use log::info;
 use std::error::Error;
@@ -23,7 +23,15 @@ pub struct Args {
     pub start: String,
     /// The survey station to end at
     pub end: String,
-    /// Exclude a survey station from the route
+    /// Force inclusion of a survey station in the route. To specify multiple stations,
+    /// use the flag multiple times and in the order you wish them to be included. If via points
+    /// are specified, the pathfinding algorithm will run several times, once for each via point.
+    /// This can result in a path which may pass through a survey station more than once as well as
+    /// longer path generation times.
+    #[clap(short, long)]
+    pub via: Vec<String>,
+    /// Exclude a survey station from the route. To specify multiple stations, use the flag
+    /// multiple times.
     #[clap(short, long)]
     pub exclude: Vec<String>,
     /// The output format to use.
@@ -50,9 +58,25 @@ pub fn run() -> Result<(), Box<dyn Error>> {
     // Find the excluded nodes.
     let (nodes, excluded) = Node::exclude_nodes(&nodes, &args.exclude);
 
-    // Find the start and end nodes.
+    // Find the required nodes.
     let start = Node::get_by_name(&nodes, &args.start);
     let end = Node::get_by_name(&nodes, &args.end);
+
+    let via_nodes = &args
+        .via
+        .iter()
+        .map(|n| Node::get_by_name(&nodes, n))
+        .collect::<Vec<&Node>>();
+    let via_node_names = via_nodes
+        .iter()
+        .map(|n| n.label.clone())
+        .collect::<Vec<String>>();
+
+    let mut route = vec![start];
+    for node in via_nodes {
+        route.push(node);
+    }
+    route.push(end);
 
     // Iterate over the nodes and legs, and attach the legs to the nodes.
     Node::attach_legs(&nodes, &legs)?;
@@ -60,10 +84,10 @@ pub fn run() -> Result<(), Box<dyn Error>> {
     info!("Found {} nodes and {} legs.", nodes.len(), legs.len());
 
     // Run the pathfinding algorithm.
-    let path = pathfind(start, end);
+    let path = pathfind_route(route);
 
     // Output the results.
-    let output = CommandOutput::new(start_time, args, path, excluded);
+    let output = CommandOutput::new(start_time, args, path, excluded, via_node_names);
     output.print()?;
 
     Ok(())

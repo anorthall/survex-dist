@@ -8,13 +8,12 @@ affiliated with the Survex project.
 * Process Survex `dump3d` files to create a graph of the cave system.
 * Calculate the shortest walking distance between any two stations in the cave system
   using A* pathfinding.
+* Force a specific route through the cave by specifying survey stations to go via or exclude.
 * Output to different formats: plain text, table, JSON.
-* Avoid certain passages by specifying a list of stations to avoid.
 
 ### Planned
 * Process Survex `.3d` files directly.
 * Produce a graphical representation of the cave system and path.
-* Allow a 'via' option, forcing the pathfinding algorithm to take a particular route.
 * A web interface to allow the application to be used without installing it locally.
 
 ## Usage
@@ -46,7 +45,10 @@ The program will now be installed into your chosen Rust installation's `bin`
 direction. In most cases, on *nix systems, this will be `~/.cargo/bin`. You may
 need to add this directory to your `PATH` environment variable.
 
-### Running the program
+### Command line arguments
+For a full list of arguments and options, run `survex-dist --help`.
+
+### Example output
 The program takes three arguments: the path to the Survex `dump3d` output file,
 the name of the start station, and the name of the end station. A sample `dump3d`
 output file for [Notts II](https://cncc.org.uk/cave/notts-2) from the
