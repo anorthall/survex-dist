@@ -75,30 +75,6 @@ impl Point {
         let z = self.z - other.z;
         (x.powi(2) + y.powi(2) + z.powi(2)).sqrt()
     }
-
-    pub fn x_distance(&self, other: &Point) -> f64 {
-        if *self.x > *other.x {
-            *self.x - *other.x
-        } else {
-            *other.x - *self.x
-        }
-    }
-
-    pub fn y_distance(&self, other: &Point) -> f64 {
-        if *self.y > *other.y {
-            *self.y - *other.y
-        } else {
-            *other.y - *self.y
-        }
-    }
-
-    pub fn z_distance(&self, other: &Point) -> f64 {
-        if *self.z > *other.z {
-            *self.z - *other.z
-        } else {
-            *other.z - *self.z
-        }
-    }
 }
 
 impl PartialEq for Point {
@@ -343,5 +319,35 @@ impl Display for Leg {
             ),
             None => write!(f, "From: {}, To: {}", self.from_coords, self.to_coords),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Point;
+
+    #[test]
+    fn test_point_distance() {
+        let p1 = Point::new(0.0, 0.0, 0.0);
+        let p2 = Point::new(1.0, 1.0, 1.0);
+        assert_eq!(p1.distance(&p2), 1.7320508075688772);
+        assert_eq!(p2.distance(&p1), 1.7320508075688772);
+
+        let p3 = Point::new(0.0, 0.0, 0.0);
+        let p4 = Point::new(0.0, 0.0, 0.0);
+        assert_eq!(p3.distance(&p4), 0.0);
+        assert_eq!(p4.distance(&p3), 0.0);
+
+        let p5 = Point::new(0.0, 0.0, 0.0);
+        let p6 = Point::new(0.0, 0.0, 1.0);
+        assert_eq!(p5.distance(&p6), 1.0);
+
+        let p7 = Point::new(0.0, 0.0, 0.0);
+        let p8 = Point::new(0.0, 1.0, 0.0);
+        assert_eq!(p7.distance(&p8), 1.0);
+
+        let p9 = Point::new(0.0, 0.0, 0.0);
+        let p10 = Point::new(1.0, 0.0, 0.0);
+        assert_eq!(p9.distance(&p10), 1.0);
     }
 }
