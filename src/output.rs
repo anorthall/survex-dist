@@ -98,7 +98,6 @@ impl CommandOutput {
         self.add_metadata("Path length", &format!("{:.2}", self.path.len()));
         self.add_metadata("Path distance", &format!("{:.2}m", path_distance));
         self.add_metadata("Straight line distance", &format!("{:.2}m", sl_distance));
-        self.add_metadata("Time taken", &format!("{:.2?}", self.start_time.elapsed()));
 
         let excluded = self.excluded.clone();
         for station in excluded {
@@ -109,6 +108,8 @@ impl CommandOutput {
         for station in via {
             self.add_metadata("Via station", station.as_str());
         }
+
+        self.add_metadata("Time taken", &format!("{:.2?}", self.start_time.elapsed()));
     }
 
     fn add_metadata(&mut self, name: &str, value: &str) {
