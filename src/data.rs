@@ -293,20 +293,6 @@ impl Leg {
             label,
         }
     }
-
-    pub fn has_point(&self, other: &Point) -> bool {
-        if self.from_coords == *other || self.to_coords == *other {
-            return true;
-        }
-        false
-    }
-
-    pub fn is_from(&self, x: f64, y: f64, z: f64) -> bool {
-        if self.from_coords.x == x && self.from_coords.y == y && self.from_coords.z == z {
-            return true;
-        }
-        false
-    }
 }
 
 impl Display for Leg {
