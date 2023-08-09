@@ -39,6 +39,7 @@ pub struct Args {
     pub no_path: bool,
 }
 
+// TODO: Allow for via nodes and excluded nodes.
 pub fn run() -> Result<(), Box<dyn Error>> {
     let start_time = std::time::Instant::now();
 
@@ -49,38 +50,32 @@ pub fn run() -> Result<(), Box<dyn Error>> {
         fatal_error(msg);
     });
 
-    // Find the excluded nodes.
-    // TODO: Exclude nodes.
-
-    // Find the required nodes.
-    let start = data.get_by_label(&args.start).unwrap();
+    // Find the start and end nodes.
+    let start = data.get_by_label_part(&args.start).unwrap_or_else(|| {
+        let msg = format!(
+            "Unable to find start station '{}'. You may need to be more specific.",
+            args.end
+        );
+        fatal_error(msg);
+    });
     let start = start.borrow();
     let start_id = start.index;
 
-    let end = data.get_by_label(&args.end).unwrap();
+    let end = data.get_by_label_part(&args.end).unwrap_or_else(|| {
+        let msg = format!(
+            "Unable to find end station '{}'. You may need to be more specific.",
+            args.end
+        );
+        fatal_error(msg);
+    });
     let end = end.borrow();
     let end_id = end.index;
 
-    // TODO: Allow for via nodes.
-    //
-    // let via_nodes = &args
-    //     .via
-    //     .iter()
-    //     .map(|n| Node::get_by_name(&nodes, n))
-    //     .collect::<Vec<&Node>>();
-    // let via_node_names = via_nodes
-    //     .iter()
-    //     .map(|n| n.label.clone())
-    //     .collect::<Vec<String>>();
-    //
-    // for node in via_nodes {
-    //     route.push(node);
-    // }
-
-    let route = vec![start_id, end_id];
-
     // Run the pathfinding algorithm.
+    let route = vec![start_id, end_id];
     let path = pathfind_route(&data.graph, route);
+
+    // Convert the vector of NodeIndexes to a vector of stations.
     let mut route = Vec::new();
     for index in path {
         let station = data.get_by_index(index).unwrap();
@@ -88,8 +83,8 @@ pub fn run() -> Result<(), Box<dyn Error>> {
     }
 
     // Output the results.
-    let excluded: Vec<String> = Vec::new(); // TODO: Excluded nodes.
-    let via_node_names: Vec<String> = Vec::new(); // TODO: Via nodes.
+    let excluded = Vec::new();
+    let via_node_names = Vec::new();
     let output = CommandOutput::new(start_time, args, route, excluded, via_node_names);
     output.print()?;
 
