@@ -1,14 +1,11 @@
-use crate::data::Node;
 use crate::output;
 use crate::output::CommandOutput;
-use crate::parser::parse_dump3d;
 use crate::pathfinding::pathfind_route;
 use clap::Parser;
-use log::info;
 use std::error::Error;
-use std::fs::File;
 use std::path::PathBuf;
 use std::process::exit;
+use survex_rs::read::load_from_path;
 
 #[derive(Parser)]
 #[command(name = "survex-dist")]
@@ -47,47 +44,53 @@ pub fn run() -> Result<(), Box<dyn Error>> {
 
     // Initialise the program and parse the command line arguments.
     let args = Args::parse();
-    let file = File::open(&args.file).unwrap_or_else(|_| {
+    let data = load_from_path(args.file.clone()).unwrap_or_else(|_| {
         let msg = format!("Unable to open file '{}'.", args.file.display());
         fatal_error(msg);
     });
 
-    // Parse the dump3d file.
-    let (_headers, nodes, legs) = parse_dump3d(file)?;
-
     // Find the excluded nodes.
-    let (nodes, excluded) = Node::exclude_nodes(&nodes, &args.exclude);
+    // TODO: Exclude nodes.
 
     // Find the required nodes.
-    let start = Node::get_by_name(&nodes, &args.start);
-    let end = Node::get_by_name(&nodes, &args.end);
+    let start = data.get_by_label(&args.start).unwrap();
+    let start = start.borrow();
+    let start_id = start.index;
 
-    let via_nodes = &args
-        .via
-        .iter()
-        .map(|n| Node::get_by_name(&nodes, n))
-        .collect::<Vec<&Node>>();
-    let via_node_names = via_nodes
-        .iter()
-        .map(|n| n.label.clone())
-        .collect::<Vec<String>>();
+    let end = data.get_by_label(&args.end).unwrap();
+    let end = end.borrow();
+    let end_id = end.index;
 
-    let mut route = vec![start];
-    for node in via_nodes {
-        route.push(node);
-    }
-    route.push(end);
+    // TODO: Allow for via nodes.
+    //
+    // let via_nodes = &args
+    //     .via
+    //     .iter()
+    //     .map(|n| Node::get_by_name(&nodes, n))
+    //     .collect::<Vec<&Node>>();
+    // let via_node_names = via_nodes
+    //     .iter()
+    //     .map(|n| n.label.clone())
+    //     .collect::<Vec<String>>();
+    //
+    // for node in via_nodes {
+    //     route.push(node);
+    // }
 
-    // Iterate over the nodes and legs, and attach the legs to the nodes.
-    Node::attach_legs(&nodes, &legs)?;
-    info!("Successfully parsed file '{}'.", args.file.display());
-    info!("Found {} nodes and {} legs.", nodes.len(), legs.len());
+    let route = vec![start_id, end_id];
 
     // Run the pathfinding algorithm.
-    let path = pathfind_route(route);
+    let path = pathfind_route(&data.graph, route);
+    let mut route = Vec::new();
+    for index in path {
+        let station = data.get_by_index(index).unwrap();
+        route.push(station);
+    }
 
     // Output the results.
-    let output = CommandOutput::new(start_time, args, path, excluded, via_node_names);
+    let excluded: Vec<String> = Vec::new(); // TODO: Excluded nodes.
+    let via_node_names: Vec<String> = Vec::new(); // TODO: Via nodes.
+    let output = CommandOutput::new(start_time, args, route, excluded, via_node_names);
     output.print()?;
 
     Ok(())
