@@ -139,14 +139,12 @@ Straight line distance: 226.65m
 #[test]
 fn test_pathfinding_with_no_possible_route() {
     let mut cmd = Command::cargo_bin("survex-dist").unwrap();
-    cmd.arg("tests/data/nottsii.3d")
-        .arg("nottsii.entrance")
-        .arg("no-route-from-this-node")
+    cmd.arg("tests/data/test.3d")
+        .arg("1.1")
+        .arg("2.1")
         .assert()
         .failure()
-        .stderr(
-            "Unable to find path between nodes nottsii.entrance and no-route-from-this-node.\n",
-        );
+        .stderr("Unable to find a route between '1.1' and '2.1'.\n");
 }
 
 #[test]

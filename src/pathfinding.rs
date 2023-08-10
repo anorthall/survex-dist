@@ -1,26 +1,36 @@
-use crate::command::fatal_error;
 use petgraph::algo::astar;
 use petgraph::graph::NodeIndex;
 use survex_rs::data::SurveyData;
 
-pub fn pathfind_route(data: &SurveyData, route: Vec<NodeIndex>) -> Vec<NodeIndex> {
+pub fn pathfind_route(data: &SurveyData, route: Vec<NodeIndex>) -> Option<Vec<NodeIndex>> {
     let mut path = Vec::new();
     let mut i = 0;
 
     while i < route.len() - 1 {
         let start = route[i];
         let end = route[i + 1];
-        let (_, sub_path) = pathfind(data, start, end);
+        let result = pathfind(data, start, end);
 
-        path.pop();
-        path.extend(sub_path);
-        i += 1;
+        if result.is_some() {
+            let (_, sub_path) = result.unwrap();
+
+            // Remove the last element of the sub-path, as it will be the
+            // same as the first element of the next sub-path.
+            if i < route.len() - 2 {
+                path.pop();
+            }
+
+            path.extend(sub_path);
+            i += 1;
+        } else {
+            return None;
+        }
     }
 
-    path
+    Some(path)
 }
 
-fn pathfind(data: &SurveyData, start: NodeIndex, end: NodeIndex) -> (f64, Vec<NodeIndex>) {
+fn pathfind(data: &SurveyData, start: NodeIndex, end: NodeIndex) -> Option<(f64, Vec<NodeIndex>)> {
     let end_coords = data.get_by_index(end).unwrap().borrow().coords;
     astar(
         &data.graph,
@@ -35,8 +45,4 @@ fn pathfind(data: &SurveyData, start: NodeIndex, end: NodeIndex) -> (f64, Vec<No
                 .distance(&end_coords)
         },
     )
-    .unwrap_or_else(|| {
-        let msg = format!("Unable to find path from '{:?}' to '{:?}'.", start, end);
-        fatal_error(msg);
-    })
 }

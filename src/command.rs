@@ -48,8 +48,8 @@ pub fn run() -> Result<(), Box<dyn Error>> {
     // Initialise the program and parse the command line arguments.
     let args = Args::parse();
     let data = load_from_path(args.file.clone()).unwrap_or_else(|_| {
-        let msg = format!("Unable to open file '{}'.", args.file.display());
-        fatal_error(msg);
+        eprintln!("Unable to open file '{}'.", args.file.display());
+        exit(1);
     });
 
     // Find the start and end nodes.
@@ -65,6 +65,17 @@ pub fn run() -> Result<(), Box<dyn Error>> {
     let route = vec![start_id, end_id];
     let path = pathfind_route(&data, route);
 
+    let path = match path {
+        Some(path) => path,
+        None => {
+            eprintln!(
+                "Unable to find a route between '{}' and '{}'.",
+                args.start, args.end
+            );
+            exit(1);
+        }
+    };
+
     // Convert the vector of NodeIndexes to a vector of stations.
     let mut route = Vec::new();
     for index in path {
@@ -79,11 +90,6 @@ pub fn run() -> Result<(), Box<dyn Error>> {
     output.print()?;
 
     Ok(())
-}
-
-pub fn fatal_error(msg: String) -> ! {
-    eprintln!("{}", msg);
-    exit(1);
 }
 
 fn get_station_by_label(data: &SurveyData, query: &str) -> RefStation {

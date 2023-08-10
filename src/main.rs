@@ -1,4 +1,5 @@
-use survex_dist::command::{fatal_error, run};
+use std::process::exit;
+use survex_dist::command::run;
 
 fn main() {
     env_logger::init();
@@ -6,7 +7,8 @@ fn main() {
     match run() {
         Ok(_) => {}
         Err(e) => {
-            fatal_error(e.to_string());
+            eprintln!("{}", e);
+            exit(1);
         }
     }
 }
