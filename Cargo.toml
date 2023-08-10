@@ -16,7 +16,7 @@ name = "survex_dist"
 path = "src/lib.rs"
 
 [dependencies]
-survex-rs = { version = "0.1.5", path = "../survex-rs" }
+survex-rs = { version = "0.1", path = "../survex-rs" }
 clap = { version = "4.3.19", features = ["derive", "cargo"] }
 serde = { version = "1.0", features = ["derive"] }
 petgraph = "0.6.3"
