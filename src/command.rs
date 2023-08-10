@@ -73,7 +73,7 @@ pub fn run() -> Result<(), Box<dyn Error>> {
 
     // Run the pathfinding algorithm.
     let route = vec![start_id, end_id];
-    let path = pathfind_route(&data.graph, route);
+    let path = pathfind_route(&data, route);
 
     // Convert the vector of NodeIndexes to a vector of stations.
     let mut route = Vec::new();
