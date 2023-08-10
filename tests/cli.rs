@@ -26,22 +26,22 @@ fn test_invalid_file_error_message() {
 }
 
 #[test]
-fn test_invalid_node_error_message() {
+fn test_invalid_station_error_message() {
     let mut cmd = Command::cargo_bin("survex-dist").unwrap();
-    cmd.arg("tests/files/notts_ii_with_entrance.txt")
+    cmd.arg("tests/data/nottsii.3d")
         .arg("node-does-not-exist-1")
         .arg("node-does-not-exist-1")
         .assert()
         .failure()
         .stderr(predicate::str::contains(
-            "Unable to find station: node-does-not-exist-1",
+            "Unable to find start station 'node-does-not-exist-1'.",
         ));
 }
 
 #[test]
 fn test_similar_node_names_are_displayed() {
     let mut cmd = Command::cargo_bin("survex-dist").unwrap();
-    cmd.arg("tests/files/notts_ii_with_entrance.txt")
+    cmd.arg("tests/data/nottsii.3d")
         .arg("nottsii.entrance")
         .arg("boxheadconnection.5")
         .assert()
@@ -60,7 +60,7 @@ nottsii.countlazloall.brunokranskiesboxheadconnection.5
 #[test]
 fn test_pathfinding_with_short_names() {
     let mut cmd = Command::cargo_bin("survex-dist").unwrap();
-    cmd.arg("tests/files/notts_ii_with_entrance.txt")
+    cmd.arg("tests/data/nottsii.3d")
         .arg("nottsii.ent")
         .arg("boxheadconnection.50")
         .assert()
@@ -79,7 +79,7 @@ fn test_pathfinding_with_short_names() {
 #[test]
 fn test_pathfinding_with_json_output() {
     let mut cmd = Command::cargo_bin("survex-dist").unwrap();
-    cmd.arg("tests/files/notts_ii_with_entrance.txt")
+    cmd.arg("tests/data/nottsii.3d")
         .arg("nottsii.ent")
         .arg("boxheadconnection.50")
         .arg("--format")
@@ -116,7 +116,7 @@ fn test_pathfinding_with_json_output() {
 #[test]
 fn test_pathfinding_with_text_output() {
     let mut cmd = Command::cargo_bin("survex-dist").unwrap();
-    cmd.arg("tests/files/notts_ii_with_entrance.txt")
+    cmd.arg("tests/data/nottsii.3d")
         .arg("nottsii.ent")
         .arg("boxheadconnection.50")
         .arg("--format")
@@ -137,7 +137,7 @@ Straight line distance: 226.65m
 #[test]
 fn test_pathfinding_with_no_possible_route() {
     let mut cmd = Command::cargo_bin("survex-dist").unwrap();
-    cmd.arg("tests/files/notts_ii_with_entrance.txt")
+    cmd.arg("tests/data/nottsii.3d")
         .arg("nottsii.entrance")
         .arg("no-route-from-this-node")
         .assert()
@@ -148,29 +148,9 @@ fn test_pathfinding_with_no_possible_route() {
 }
 
 #[test]
-/// This test ensures a complex dump3d file with XSECT and ERROR_INFO can be parsed.
-fn test_pathfinding_with_complex_dump3d_file() {
-    let mut cmd = Command::cargo_bin("survex-dist").unwrap();
-    cmd.arg("tests/files/vallina.txt")
-        .arg("surfacebottom.0")
-        .arg("surfacetop.0")
-        .arg("--format")
-        .arg("text")
-        .assert()
-        .success()
-        .stdout(predicate::str::contains(
-            r#"
-Start station: 0733-vallina.surfacebottom.0
-End station: 0733-vallina.0733-16-03.0
-Path length: 87
-Path distance: 1148.58m"#,
-        ));
-}
-
-#[test]
 fn test_pathfinding_with_excluded_station() {
     let mut cmd = Command::cargo_bin("survex-dist").unwrap();
-    cmd.arg("tests/files/notts_ii_with_entrance.txt")
+    cmd.arg("tests/data/nottsii.3d")
         .arg("nottsii.entrance")
         .arg("boxheadconnection.50")
         .arg("--format")
@@ -193,7 +173,7 @@ Excluded station: committeepotentrance.gordonsinlet.10"#,
 #[test]
 fn test_pathfinding_with_via_point() {
     let mut cmd = Command::cargo_bin("survex-dist").unwrap();
-    cmd.arg("tests/files/notts_ii_with_entrance.txt")
+    cmd.arg("tests/data/nottsii.3d")
         .arg("nottsii.entrance")
         .arg("boxheadconnection.50")
         .arg("--format")
@@ -213,33 +193,5 @@ Via station: nottsii.mainstreamway.mainstreamway3.40"#,
         ))
         .stdout(predicate::str::contains(
             "47: mainstreamway.mainstreamway3.40 - 4.03m - 252.29m",
-        ));
-}
-
-#[test]
-fn test_correct_message_displayed_when_no_station_match_found() {
-    let mut cmd = Command::cargo_bin("survex-dist").unwrap();
-    cmd.arg("tests/files/notts_ii_with_entrance.txt")
-        .arg("nottsii.entrance")
-        .arg("this-station-does-not-exist")
-        .assert()
-        .failure()
-        .stderr(predicate::str::contains(
-            "No station name fully or partially matched the query.",
-        ));
-}
-
-#[test]
-fn test_correct_message_displayed_with_station_match_ambiguous() {
-    let mut cmd = Command::cargo_bin("survex-dist").unwrap();
-    cmd.arg("tests/files/notts_ii_with_entrance.txt")
-        .arg("nottsii.entrance")
-        .arg("nottsii")
-        .assert()
-        .failure()
-        .stderr(predicate::str::contains(
-            r#"The station name is ambiguous, try being more specific.
-
-nottsii matched the following stations:"#,
         ));
 }
