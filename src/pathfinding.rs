@@ -1,39 +1,44 @@
-use crate::command::fatal_error;
-use crate::data::Node;
-use ordered_float::OrderedFloat;
-use pathfinding::prelude::astar;
+use petgraph::algo::astar;
+use petgraph::graph::NodeIndex;
+use survex_rs::data::SurveyData;
 
-pub fn pathfind_route(route: Vec<&Node>) -> Vec<Node> {
-    let mut path: Vec<Node> = Vec::new();
+#[allow(clippy::unnecessary_unwrap)]
+pub fn pathfind_route(data: &SurveyData, route: Vec<NodeIndex>) -> Option<Vec<NodeIndex>> {
+    let mut path = Vec::new();
     let mut i = 0;
 
     while i < route.len() - 1 {
         let start = route[i];
         let end = route[i + 1];
-        let sub_path = pathfind(start, end);
-        path.pop(); // Remove the last node from the path as it will be duplicated.
-        path.extend(sub_path);
-        i += 1;
+        let result = pathfind(data, start, end);
+
+        if result.is_some() {
+            let (_, sub_path) = result.unwrap();
+            // Remove the last element of the previous path, as it will be duplicated.
+            path.pop();
+            path.extend(sub_path);
+            i += 1;
+        } else {
+            return None;
+        }
     }
 
-    path
+    Some(path)
 }
 
-fn pathfind<'a>(start: &'a Node, end: &'a Node) -> Vec<Node> {
-    let result = astar(
+fn pathfind(data: &SurveyData, start: NodeIndex, end: NodeIndex) -> Option<(f64, Vec<NodeIndex>)> {
+    let end_coords = data.get_by_index(end).unwrap().borrow().coords;
+    astar(
+        &data.graph,
         start,
-        |node| node.get_successors(),
-        |node| OrderedFloat(node.distance(end)),
-        |node| *node == *end,
-    );
-
-    if let Some((path, _)) = result {
-        path
-    } else {
-        let msg = format!(
-            "Unable to find path between nodes {} and {}.",
-            start.label, end.label
-        );
-        fatal_error(msg);
-    }
+        |stn| stn == end,
+        |e| *e.weight(),
+        |stn| {
+            data.get_by_index(stn)
+                .unwrap()
+                .borrow()
+                .coords
+                .distance(&end_coords)
+        },
+    )
 }

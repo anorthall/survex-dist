@@ -9,4 +9,4 @@ tarpaulin-report.html
 .idea/
 
 # survex-dist
-dump3d/
+3d/

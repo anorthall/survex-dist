@@ -1,24 +1,29 @@
 [package]
 name = "survex-dist"
-description = "A tool to calculate the distance between two stations in a Survex dump3d file."
+description = "A tool to calculate the distance between two stations in a Survex 3D file."
+license = "GPL-3.0-only"
+repository = "https://github.com/anorthall/survex-dist"
+homepage = "https://github.com/anorthall/survex-dist"
+readme = "README.md"
 authors = ["Andrew Northall <andrew@northall.me.uk>"]
-version = "0.2.0"
+keywords = ["caving", "caves", "cave-survey", "survex"]
+categories = ["science::geo"]
+version = "0.3.0"
 edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [lib]
 name = "survex_dist"
 path = "src/lib.rs"
+doc = false
 
 [dependencies]
-clap = { version = "4.3.19", features = ["derive", "cargo"] }
+survex-rs = { version = "0.1.7" }
+clap = { version = "4.3.19", features = ["derive", "cargo", "wrap_help"] }
 serde = { version = "1.0", features = ["derive"] }
+petgraph = "0.6.3"
 serde_json = "1.0"
 log = "0.4"
 env_logger = "0.10"
-pathfinding = "4.3"
-ordered-float = "3.7"
 prettytable-rs = "0.10.0"
 
 [dev-dependencies]

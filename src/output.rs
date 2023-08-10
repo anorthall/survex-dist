@@ -1,15 +1,15 @@
 use crate::command::Args;
-use crate::data::Node;
 use serde::Serialize;
 use std::error::Error;
 use std::time::Instant;
+use survex_rs::data::RefStation;
 
 #[derive(Serialize)]
 pub struct CommandOutput {
     path: Vec<PathLine>,
     metadata: Vec<MetadataItem>,
     #[serde(skip)]
-    excluded: Vec<String>,
+    avoided: Vec<String>,
     #[serde(skip)]
     via: Vec<String>,
     #[serde(skip)]
@@ -24,20 +24,20 @@ impl CommandOutput {
     pub fn new(
         start_time: Instant,
         args: Args,
-        path: Vec<Node>,
-        excluded: Vec<String>,
+        path: Vec<RefStation>,
+        avoided: Vec<String>,
         via: Vec<String>,
     ) -> CommandOutput {
-        let expect_msg = "Path must have at least one node.";
-        let start_node = path.first().expect(expect_msg).clone();
-        let end_node = path.last().expect(expect_msg).clone();
+        let expect_msg = "Path must have at least one station.";
+        let start_node = path.first().expect(expect_msg);
+        let end_node = path.last().expect(expect_msg);
 
         let mut path_distance = 0.0_f64;
         let mut leg_distance = 0.0_f64;
         let mut path_lines = Vec::new();
         for (i, node) in path.iter().enumerate() {
             if i > 0 {
-                leg_distance = node.distance(&path[i - 1]);
+                leg_distance = node.borrow().coords.distance(&path[i - 1].borrow().coords);
                 path_distance += leg_distance;
             }
 
@@ -46,7 +46,7 @@ impl CommandOutput {
 
         let mut output = CommandOutput {
             start_time,
-            excluded,
+            avoided,
             via,
             format: args.format,
             path: path_lines,
@@ -91,17 +91,24 @@ impl CommandOutput {
         text::print_metadata(self);
     }
 
-    fn build_metadata(&mut self, start_node: Node, end_node: Node, path_distance: f64) {
-        let sl_distance = start_node.distance(&end_node);
+    fn build_metadata(
+        &mut self,
+        start_node: &RefStation,
+        end_node: &RefStation,
+        path_distance: f64,
+    ) {
+        let start_node = start_node.borrow();
+        let end_node = end_node.borrow();
+        let sl_distance = start_node.coords.distance(&end_node.coords);
         self.add_metadata("Start station", start_node.label.as_str());
         self.add_metadata("End station", end_node.label.as_str());
         self.add_metadata("Path length", &format!("{:.2}", self.path.len()));
         self.add_metadata("Path distance", &format!("{:.2}m", path_distance));
         self.add_metadata("Straight line distance", &format!("{:.2}m", sl_distance));
 
-        let excluded = self.excluded.clone();
-        for station in excluded {
-            self.add_metadata("Excluded station", station.as_str());
+        let avoided = self.avoided.clone();
+        for station in avoided {
+            self.add_metadata("Avoided station", station.as_str());
         }
 
         let via = self.via.clone();
@@ -138,11 +145,12 @@ struct PathLine {
 }
 
 impl PathLine {
-    fn new(id: usize, node: &Node, leg_distance: f64, total_distance: f64) -> PathLine {
+    fn new(id: usize, station: &RefStation, leg_distance: f64, total_distance: f64) -> PathLine {
+        let station = station.borrow();
         PathLine {
             id,
-            name: node.short_name(),
-            coords: format!("{}", node.coords),
+            name: station.label.to_string(),
+            coords: format!("{}", station.coords),
             leg_distance: format!("{:.2}m", leg_distance),
             total_distance: format!("{:.2}m", total_distance),
         }
