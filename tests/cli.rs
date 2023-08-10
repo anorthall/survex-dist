@@ -155,7 +155,7 @@ fn test_pathfinding_with_excluded_station() {
         .arg("boxheadconnection.50")
         .arg("--format")
         .arg("text")
-        .arg("--exclude")
+        .arg("--avoid")
         .arg("gordonsinlet.10")
         .assert()
         .success()
@@ -166,7 +166,7 @@ End station: nottsii.countlazloall.brunokranskiesboxheadconnection.50
 Path length: 147
 Path distance: 623.31m
 Straight line distance: 226.65m
-Excluded station: committeepotentrance.gordonsinlet.10"#,
+Avoided station: nottsii.committeepotentrance.gordonsinlet.10"#,
         ));
 }
 
@@ -180,6 +180,12 @@ fn test_pathfinding_with_via_point() {
         .arg("text")
         .arg("--via")
         .arg("mainstreamway3.40")
+        .arg("--via")
+        .arg("mainstreamway3.41")
+        .arg("--via")
+        .arg("mainstreamway3.42")
+        .arg("--via")
+        .arg("mainstreamway3.43")
         .assert()
         .success()
         .stdout(predicate::str::contains(
@@ -192,6 +198,6 @@ Straight line distance: 226.65m
 Via station: nottsii.mainstreamway.mainstreamway3.40"#,
         ))
         .stdout(predicate::str::contains(
-            "47: mainstreamway.mainstreamway3.40 - 4.03m - 252.29m",
+            "47: nottsii.mainstreamway.mainstreamway3.40 - 4.03m - 252.29m",
         ));
 }

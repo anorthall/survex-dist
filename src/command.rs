@@ -12,57 +12,94 @@ use survex_rs::read::load_from_path;
 #[derive(Parser)]
 #[command(name = "survex-dist")]
 #[command(author, version, about)]
-#[command(
-    long_about = "For information on usage, please see https://github.com/anorthall/survex-dist"
-)]
+/// survex-dist
+///
+/// A command-line tool for calculating the distance between stations in a Survex file. Provide a
+/// Survex 3d file, as well as an start and end station, and the tool will calculate the distance
+/// between the two stations and display the route taken.
+///
+/// If you wish to use a station as a via point, use the --via flag. Alternatively, use the
+/// --avoid flag to ensure a station is not included in the route. Both flags can be used multiple
+/// times to specify multiple via or avoid points.
+///
+/// To show information about a Survex file without calculating a route, use the --analyse flag
+/// instead of providing start and end stations.
+///
+/// For more information visit https://docs.rs/survex-dist or
+/// https://github.com/anorthall/survex-dist
 pub struct Args {
-    /// The file to process.
+    /// The Survex 3d file to process.
     pub file: PathBuf,
     /// The survey station to start from
-    pub start: String,
+    #[clap(required_unless_present = "analyse")]
+    pub start: Option<String>,
     /// The survey station to end at
-    pub end: String,
-    /// Force inclusion of a survey station in the route. To specify multiple stations,
-    /// use the flag multiple times and in the order you wish them to be included. If via points
-    /// are specified, the pathfinding algorithm will run several times, once for each via point.
-    /// This can result in a path which may pass through a survey station more than once as well as
-    /// longer path generation times.
+    #[clap(required_unless_present = "analyse")]
+    pub end: Option<String>,
+    /// Force inclusion of a survey station in the route.
     #[clap(short, long)]
     pub via: Vec<String>,
     /// Exclude a survey station from the route. To specify multiple stations, use the flag
     /// multiple times.
     #[clap(short, long)]
-    pub exclude: Vec<String>,
+    pub avoid: Vec<String>,
     /// The output format to use.
     #[clap(short, long, default_value = "table")]
     pub format: output::Format,
     /// Do not print the path taken.
     #[clap(short, long)]
     pub no_path: bool,
+    /// Analyse the file provided and print information about the survey.
+    #[clap(long)]
+    pub analyse: bool,
 }
 
-// TODO: Allow for via nodes and excluded nodes.
 pub fn run() -> Result<(), Box<dyn Error>> {
     let start_time = std::time::Instant::now();
 
     // Initialise the program and parse the command line arguments.
     let args = Args::parse();
-    let data = load_from_path(args.file.clone()).unwrap_or_else(|_| {
+    let mut data = load_from_path(args.file.clone()).unwrap_or_else(|_| {
         eprintln!("Unable to open file '{}'.", args.file.display());
         exit(1);
     });
 
+    // If the user has specified the --analyse flag, print information about the survey and exit.
+    if args.analyse {
+        run_analysis(data)?;
+        return Ok(());
+    }
+
     // Find the start and end nodes.
-    let start = get_station_by_label(&data, &args.start);
+    let start = get_station_by_label(&data, &args.start.clone().unwrap());
     let start = start.borrow();
     let start_id = start.index;
 
-    let end = get_station_by_label(&data, &args.end);
+    let end = get_station_by_label(&data, &args.end.clone().unwrap());
     let end = end.borrow();
     let end_id = end.index;
 
+    // Avoid any nodes specified by the user by removing them from the graph.
+    let mut avoided = Vec::new();
+    for query in &args.avoid {
+        let station = get_station_by_label(&data, query);
+        let station = station.borrow();
+        data.graph.remove_node(station.index);
+        avoided.push(station.label.clone());
+    }
+
+    // Build the route including any via nodes specified by the user.
+    let mut route = vec![start_id];
+    let mut via = Vec::new();
+    for query in &args.via {
+        let station = get_station_by_label(&data, query);
+        let station = station.borrow();
+        via.push(station.label.clone());
+        route.push(station.index);
+    }
+    route.push(end_id);
+
     // Run the pathfinding algorithm.
-    let route = vec![start_id, end_id];
     let path = pathfind_route(&data, route);
 
     let path = match path {
@@ -70,7 +107,8 @@ pub fn run() -> Result<(), Box<dyn Error>> {
         None => {
             eprintln!(
                 "Unable to find a route between '{}' and '{}'.",
-                args.start, args.end
+                args.start.unwrap(),
+                args.end.unwrap()
             );
             exit(1);
         }
@@ -84,12 +122,14 @@ pub fn run() -> Result<(), Box<dyn Error>> {
     }
 
     // Output the results.
-    let excluded = Vec::new();
-    let via_node_names = Vec::new();
-    let output = CommandOutput::new(start_time, args, route, excluded, via_node_names);
+    let output = CommandOutput::new(start_time, args, route, avoided, via);
     output.print()?;
 
     Ok(())
+}
+
+fn run_analysis(_data: SurveyData) -> Result<(), Box<dyn Error>> {
+    todo!();
 }
 
 fn get_station_by_label(data: &SurveyData, query: &str) -> RefStation {

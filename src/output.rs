@@ -9,7 +9,7 @@ pub struct CommandOutput {
     path: Vec<PathLine>,
     metadata: Vec<MetadataItem>,
     #[serde(skip)]
-    excluded: Vec<String>,
+    avoided: Vec<String>,
     #[serde(skip)]
     via: Vec<String>,
     #[serde(skip)]
@@ -25,7 +25,7 @@ impl CommandOutput {
         start_time: Instant,
         args: Args,
         path: Vec<RefStation>,
-        excluded: Vec<String>,
+        avoided: Vec<String>,
         via: Vec<String>,
     ) -> CommandOutput {
         let expect_msg = "Path must have at least one station.";
@@ -46,7 +46,7 @@ impl CommandOutput {
 
         let mut output = CommandOutput {
             start_time,
-            excluded,
+            avoided,
             via,
             format: args.format,
             path: path_lines,
@@ -106,9 +106,9 @@ impl CommandOutput {
         self.add_metadata("Path distance", &format!("{:.2}m", path_distance));
         self.add_metadata("Straight line distance", &format!("{:.2}m", sl_distance));
 
-        let excluded = self.excluded.clone();
-        for station in excluded {
-            self.add_metadata("Excluded station", station.as_str());
+        let avoided = self.avoided.clone();
+        for station in avoided {
+            self.add_metadata("Avoided station", station.as_str());
         }
 
         let via = self.via.clone();

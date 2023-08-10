@@ -13,13 +13,8 @@ pub fn pathfind_route(data: &SurveyData, route: Vec<NodeIndex>) -> Option<Vec<No
 
         if result.is_some() {
             let (_, sub_path) = result.unwrap();
-
-            // Remove the last element of the sub-path, as it will be the
-            // same as the first element of the next sub-path.
-            if i < route.len() - 2 {
-                path.pop();
-            }
-
+            // Remove the last element of the previous path, as it will be duplicated.
+            path.pop();
             path.extend(sub_path);
             i += 1;
         } else {
