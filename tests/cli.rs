@@ -21,7 +21,7 @@ fn test_invalid_file_error_message() {
         .assert()
         .failure()
         .stderr(predicate::str::contains(
-            "Unable to open file 'file-does-not-exist'.",
+            "Unable to open or read file 'file-does-not-exist'. Is it a valid Survex 3D file?",
         ));
 }
 

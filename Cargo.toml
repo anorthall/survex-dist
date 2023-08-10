@@ -1,6 +1,6 @@
 [package]
 name = "survex-dist"
-description = "A tool to calculate the distance between two stations in a Survex 3d file."
+description = "A tool to calculate the distance between two stations in a Survex 3D file."
 license = "GPL-3.0-only"
 repository = "https://github.com/anorthall/survex-dist"
 homepage = "https://github.com/anorthall/survex-dist"
@@ -14,6 +14,7 @@ edition = "2021"
 [lib]
 name = "survex_dist"
 path = "src/lib.rs"
+doc = false
 
 [dependencies]
 survex-rs = { version = "0.1", path = "../survex-rs" }

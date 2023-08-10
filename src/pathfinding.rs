@@ -2,6 +2,7 @@ use petgraph::algo::astar;
 use petgraph::graph::NodeIndex;
 use survex_rs::data::SurveyData;
 
+#[allow(clippy::unnecessary_unwrap)]
 pub fn pathfind_route(data: &SurveyData, route: Vec<NodeIndex>) -> Option<Vec<NodeIndex>> {
     let mut path = Vec::new();
     let mut i = 0;

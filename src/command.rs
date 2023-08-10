@@ -12,23 +12,19 @@ use survex_rs::read::load_from_path;
 #[derive(Parser)]
 #[command(name = "survex-dist")]
 #[command(author, version, about)]
-/// survex-dist
+/// survex-dist: a tool for calculating the distance between stations in a Survex file.
 ///
-/// A command-line tool for calculating the distance between stations in a Survex file. Provide a
-/// Survex 3d file, as well as an start and end station, and the tool will calculate the distance
-/// between the two stations and display the route taken.
+/// Provide a Survex 3D file, as well as an start and end station, and the tool will calculate the
+/// distance between the two stations and display the route taken.
 ///
 /// If you wish to use a station as a via point, use the --via flag. Alternatively, use the
 /// --avoid flag to ensure a station is not included in the route. Both flags can be used multiple
 /// times to specify multiple via or avoid points.
 ///
-/// To show information about a Survex file without calculating a route, use the --analyse flag
-/// instead of providing start and end stations.
-///
-/// For more information visit https://docs.rs/survex-dist or
-/// https://github.com/anorthall/survex-dist
+/// Visit https://docs.rs/survex-dist or https://github.com/anorthall/survex-dist for more
+/// information.
 pub struct Args {
-    /// The Survex 3d file to process.
+    /// The Survex 3D file to process.
     pub file: PathBuf,
     /// The survey station to start from
     #[clap(required_unless_present = "analyse")]
@@ -49,7 +45,7 @@ pub struct Args {
     /// Do not print the path taken.
     #[clap(short, long)]
     pub no_path: bool,
-    /// Analyse the file provided and print information about the survey.
+    /// Analyse the file provided and print information about the survey. Not yet implemented.
     #[clap(long)]
     pub analyse: bool,
 }
@@ -60,7 +56,10 @@ pub fn run() -> Result<(), Box<dyn Error>> {
     // Initialise the program and parse the command line arguments.
     let args = Args::parse();
     let mut data = load_from_path(args.file.clone()).unwrap_or_else(|_| {
-        eprintln!("Unable to open file '{}'.", args.file.display());
+        eprintln!(
+            "Unable to open or read file '{}'. Is it a valid Survex 3D file?",
+            args.file.display()
+        );
         exit(1);
     });
 
@@ -129,7 +128,8 @@ pub fn run() -> Result<(), Box<dyn Error>> {
 }
 
 fn run_analysis(_data: SurveyData) -> Result<(), Box<dyn Error>> {
-    todo!();
+    println!("Analysis not yet implemented.");
+    Ok(())
 }
 
 fn get_station_by_label(data: &SurveyData, query: &str) -> RefStation {
