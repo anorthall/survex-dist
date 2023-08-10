@@ -5,6 +5,8 @@ use clap::Parser;
 use std::error::Error;
 use std::path::PathBuf;
 use std::process::exit;
+use std::rc::Rc;
+use survex_rs::data::{RefStation, SurveyData};
 use survex_rs::read::load_from_path;
 
 #[derive(Parser)]
@@ -51,23 +53,11 @@ pub fn run() -> Result<(), Box<dyn Error>> {
     });
 
     // Find the start and end nodes.
-    let start = data.get_by_label_part(&args.start).unwrap_or_else(|| {
-        let msg = format!(
-            "Unable to find start station '{}'. You may need to be more specific.",
-            args.end
-        );
-        fatal_error(msg);
-    });
+    let start = get_station_by_label(&data, &args.start);
     let start = start.borrow();
     let start_id = start.index;
 
-    let end = data.get_by_label_part(&args.end).unwrap_or_else(|| {
-        let msg = format!(
-            "Unable to find end station '{}'. You may need to be more specific.",
-            args.end
-        );
-        fatal_error(msg);
-    });
+    let end = get_station_by_label(&data, &args.end);
     let end = end.borrow();
     let end_id = end.index;
 
@@ -94,4 +84,47 @@ pub fn run() -> Result<(), Box<dyn Error>> {
 pub fn fatal_error(msg: String) -> ! {
     eprintln!("{}", msg);
     exit(1);
+}
+
+fn get_station_by_label(data: &SurveyData, query: &str) -> RefStation {
+    let mut matches = Vec::new();
+    for station in &data.stations {
+        let stn = station.borrow();
+        if stn.label == query {
+            return Rc::clone(station);
+        } else if station.borrow().label.contains(query) {
+            matches.push(station);
+        }
+    }
+
+    if matches.is_empty() {
+        eprintln!(
+            "There were no full or partial matches for the station name '{}'.",
+            query
+        );
+        eprintln!("Please check the station name is correct and try again.");
+        exit(1);
+    } else if matches.len() == 1 {
+        return Rc::clone(matches[0]);
+    } else {
+        eprintln!(
+            "There were {} possible matches for the station name '{}'.\n",
+            matches.len(),
+            query
+        );
+
+        if matches.len() > 20 {
+            eprintln!("The first 20 matches were:\n");
+        } else {
+            eprintln!("The matches were:\n");
+        }
+
+        for station in matches.iter().take(20) {
+            let stn = station.borrow();
+            eprintln!("  {}", stn.label);
+        }
+
+        eprintln!("\nPlease provide a more specific station name and try again.");
+        exit(1);
+    }
 }
