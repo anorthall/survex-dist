@@ -34,7 +34,7 @@ fn test_invalid_station_error_message() {
         .assert()
         .failure()
         .stderr(predicate::str::contains(
-            "Unable to find start station 'node-does-not-exist-1'.",
+            "There were no full or partial matches for the station name 'node-does-not-exist-1'.",
         ));
 }
 
@@ -47,12 +47,14 @@ fn test_similar_node_names_are_displayed() {
         .assert()
         .failure()
         .stderr(
-            r#"The station name is ambiguous, try being more specific.
+            r#"There were 2 possible matches for the station name 'boxheadconnection.5'.
 
-boxheadconnection.5 matched the following stations:
+The matches were:
 
-nottsii.countlazloall.brunokranskiesboxheadconnection.50
-nottsii.countlazloall.brunokranskiesboxheadconnection.5
+  nottsii.countlazloall.brunokranskiesboxheadconnection.50
+  nottsii.countlazloall.brunokranskiesboxheadconnection.5
+
+Please provide a more specific station name and try again.
 "#,
         );
 }
