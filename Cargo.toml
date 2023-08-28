@@ -20,7 +20,7 @@ doc = false
 survex-rs = { version = "0.1.7" }
 clap = { version = "4.3.19", features = ["derive", "cargo", "wrap_help"] }
 serde = { version = "1.0", features = ["derive"] }
-petgraph = "0.6.3"
+petgraph = "0.6.4"
 serde_json = "1.0"
 log = "0.4"
 env_logger = "0.10"
